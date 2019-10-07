@@ -21,6 +21,8 @@ const publicationGetTests = require('./publication-get.test')
 const publicationUpdateTests = require('./publication-update.test')
 const publicationDeleteTests = require('./publication-delete.test')
 
+const documentCreateTests = require('./document-create.test')
+
 const readerCreateTests = require('./reader-create.test')
 const readerGetTests = require('./reader-get.test')
 
@@ -34,6 +36,9 @@ const tagPublicationTests = require('./tag-publication.test')
 const tagNoteTests = require('./tag-note.test')
 const tagDeleteTests = require('./tag-delete.test')
 const tagUpdateTests = require('./tag-update.test')
+
+const jobGetTests = require('./job-get.test')
+const jobPatchTests = require('./job-patch.test')
 
 const app = require('../../server').app
 
@@ -72,6 +77,11 @@ const allTests = async () => {
     await publicationUpdateTests(app)
     await publicationDeleteTests(app)
   }
+
+  if (!test || test === 'document') {
+    await documentCreateTests(app)
+  }
+
   if (!test || test === 'reader') {
     await readerCreateTests(app)
     await readerGetTests(app)
@@ -97,6 +107,11 @@ const allTests = async () => {
     await readerNotesPaginateTests(app)
     await readerNotesFilterTests(app)
     await readerNotesOrderByTests(app)
+  }
+
+  if (!test || test === 'jobs') {
+    await jobGetTests(app)
+    await jobPatchTests(app)
   }
 
   if (process.env.POSTGRE_INSTANCE) {
