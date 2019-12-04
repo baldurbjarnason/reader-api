@@ -5,16 +5,11 @@ const {
   getToken,
   createUser,
   destroyDB,
-  getActivityFromUrl,
   createPublication
 } = require('../utils/utils')
 const _ = require('lodash')
 
 const test = async app => {
-  if (!process.env.POSTGRE_INSTANCE) {
-    await app.initialize()
-  }
-
   const token = getToken()
   const readerCompleteUrl = await createUser(app, token)
   const readerUrl = urlparse(readerCompleteUrl).path
@@ -22,51 +17,56 @@ const test = async app => {
   const now = new Date().toISOString()
 
   const publicationObject = {
-    type: 'Publication',
+    type: 'Book',
     name: 'Publication A',
     author: ['John Smith'],
     editor: 'Jané S. Doe',
-    description: 'this is a description!!',
-    inLanguage: 'English',
+    contributor: ['Sample Contributor'],
+    creator: ['Sample Creator'],
+    illustrator: ['Sample Illustrator'],
+    publisher: ['Sample Publisher'],
+    translator: ['Sample Translator'],
+    abstract: 'this is a description!!',
+    numberOfPages: 250,
+    encodingFormat: 'epub',
+    inLanguage: 'en',
+    url: 'http://www.something.com',
+    dateModified: now,
+    bookEdition: 'third',
+    bookFormat: 'EBook',
+    isbn: '1234',
+    copyrightYear: 1977,
+    genre: 'vampire romance',
+    license: 'http://www.mylicense.com',
     datePublished: now,
     links: [
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        href: 'http://example.org/abc',
-        hreflang: 'en',
-        mediaType: 'text/html',
+        url: 'http://example.org/abc',
+        encodingFormat: 'text/html',
         name: 'An example link'
       }
     ],
     readingOrder: [
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        href: 'http://example.org/abc',
-        hreflang: 'en',
-        mediaType: 'text/html',
+        url: 'http://example.org/abc',
+        encodingFormat: 'text/html',
         name: 'An example reading order object1'
       },
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        href: 'http://example.org/abc',
-        hreflang: 'en',
-        mediaType: 'text/html',
+        url: 'http://example.org/abc',
+        encodingFormat: 'text/html',
         name: 'An example reading order object2'
       },
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        href: 'http://example.org/abc',
-        hreflang: 'en',
-        mediaType: 'text/html',
+        url: 'http://example.org/abc',
+        encodingFormat: 'text/html',
         name: 'An example reading order object3'
       }
     ],
     resources: [
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        href: 'http://example.org/abc',
-        hreflang: 'en',
-        mediaType: 'text/html',
+        url: 'http://example.org/abc',
+        encodingFormat: 'text/html',
         name: 'An example resource'
       }
     ],
@@ -91,12 +91,17 @@ const test = async app => {
     await tap.type(body, 'object')
     await tap.type(body.id, 'string')
     await tap.ok(body.id.endsWith('/'))
-    await tap.equal(body.type, 'Publication')
+    await tap.equal(body.type, 'Book')
     await tap.equal(body.name, 'Publication A')
     await tap.ok(_.isArray(body.author))
     await tap.equal(body.author[0].name, 'John Smith')
     await tap.equal(body.editor[0].name, 'Jané S. Doe')
-    await tap.equal(body.description, 'this is a description!!')
+    await tap.equal(body.contributor[0].name, 'Sample Contributor')
+    await tap.equal(body.creator[0].name, 'Sample Creator')
+    await tap.equal(body.illustrator[0].name, 'Sample Illustrator')
+    await tap.equal(body.publisher[0].name, 'Sample Publisher')
+    await tap.equal(body.translator[0].name, 'Sample Translator')
+    await tap.equal(body.abstract, 'this is a description!!')
     await tap.ok(body.datePublished)
     await tap.equal(body.links[0].name, 'An example link')
     await tap.equal(
@@ -108,7 +113,17 @@ const test = async app => {
     await tap.ok(body.readerId)
     await tap.ok(body.published)
     await tap.ok(body.updated)
-    await tap.equal(body.inLanguage, 'English')
+    await tap.equal(body.inLanguage[0], 'en')
+    await tap.equal(body.numberOfPages, 250)
+    await tap.equal(body.encodingFormat, 'epub')
+    await tap.equal(body.url, 'http://www.something.com')
+    await tap.ok(body.dateModified)
+    await tap.equal(body.bookEdition, 'third')
+    await tap.equal(body.bookFormat, 'EBook')
+    await tap.equal(body.isbn, '1234')
+    await tap.equal(body.copyrightYear, 1977)
+    await tap.equal(body.genre, 'vampire romance')
+    await tap.equal(body.license, 'http://www.mylicense.com')
     // should not have a position
     await tap.notOk(body.position)
   })
@@ -175,7 +190,7 @@ const test = async app => {
 
     await tap.type(body, 'object')
     await tap.type(body.id, 'string')
-    await tap.equal(body.type, 'Publication')
+    await tap.equal(body.type, 'Book')
     await tap.equal(body.name, 'Publication A')
     await tap.type(body.position, 'object')
     await tap.equal(body.position.property, 'last')
@@ -199,9 +214,6 @@ const test = async app => {
     await tap.equal(error.details.activity, 'Get Publication')
   })
 
-  if (!process.env.POSTGRE_INSTANCE) {
-    await app.terminate()
-  }
   await destroyDB(app)
 }
 

@@ -5,6 +5,7 @@ const { Note } = require('../../models/Note')
 const { Tag } = require('../../models/Tag')
 const boom = require('@hapi/boom')
 const { ValidationError } = require('objection')
+const { libraryCacheUpdate } = require('../../utils/cache')
 
 const handleUpdate = async (req, res, next, reader) => {
   const body = req.body
@@ -82,9 +83,20 @@ const handleUpdate = async (req, res, next, reader) => {
           })
         )
       }
+      if (resultPub instanceof Error) {
+        return next(
+          boom.badRequest(resultPub.message, {
+            type: 'Publication',
+            activity: 'Update Publication'
+          })
+        )
+      }
 
       const activityObjPub = createActivityObject(body, resultPub, reader)
       const pubActivity = await Activity.createActivity(activityObjPub)
+
+      await libraryCacheUpdate(reader.id)
+
       res.status(201)
       res.set('Location', pubActivity.id)
       res.end()
@@ -114,6 +126,9 @@ const handleUpdate = async (req, res, next, reader) => {
 
       const activityObjTag = createActivityObject(body, resultTag, reader)
       const tagActivity = await Activity.createActivity(activityObjTag)
+
+      await libraryCacheUpdate(reader.id)
+
       res.status(201)
       res.set('Location', tagActivity.id)
       res.end()

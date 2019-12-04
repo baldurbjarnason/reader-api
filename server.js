@@ -7,8 +7,9 @@ const passport = require('passport')
 const helmet = require('helmet')
 // const csrf = require('csurf')
 const { Strategy, ExtractJwt } = require('passport-jwt')
-const elasticsearchQueue = require('./utils/queue')
+const elasticsearchQueue = require('./processFiles/searchQueue')
 const epubQueue = require('./processFiles/index')
+const cache = require('./utils/cache')
 
 const activityRoute = require('./routes/activity')
 const publicationRoute = require('./routes/publication')
@@ -28,18 +29,15 @@ const searchRoute = require('./routes/search')
 const getJobRoute = require('./routes/job-get')
 const fileUploadPubRoute = require('./routes/file-upload-pub')
 
+// new routes
+const publicationPostRoute = require('./routes/publication-post')
+
 const errorHandling = require('./routes/middleware/error-handling')
 
 const setupKnex = async skip_migrate => {
   let config
-  /* istanbul ignore next */
-  if (process.env.POSTGRE_INSTANCE) {
-    config = require('./knexfile.js')['postgresql']
-  } else if (process.env.NODE_ENV === 'test') {
-    config = require('./knexfile.js')['test']
-  } else {
-    config = require('./knexfile.js')['development']
-  }
+
+  config = require('./knexfile.js')['postgresql']
   app.knex = require('knex')(config)
   if (!skip_migrate) {
     await app.knex.migrate.rollback()
@@ -158,10 +156,19 @@ app.terminate = async () => {
   }
   app.initialized = false
   if (elasticsearchQueue) {
+    await elasticsearchQueue.clean(0)
+    await elasticsearchQueue.clean(0, 'failed')
+    await elasticsearchQueue.empty()
     elasticsearchQueue.close()
   }
   if (epubQueue) {
+    await epubQueue.clean(0)
+    await epubQueue.clean(0, 'failed')
+    await epubQueue.empty()
     epubQueue.close()
+  }
+  if (cache) {
+    cache.quitCache()
   }
   return await app.knex.destroy()
 }
@@ -183,6 +190,9 @@ readerNotesRoute(app)
 searchRoute(app)
 getJobRoute(app)
 fileUploadPubRoute(app)
+
+// new routes
+publicationPostRoute(app)
 
 app.use(errorHandling)
 

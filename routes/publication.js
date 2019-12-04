@@ -39,7 +39,6 @@ const boom = require('@hapi/boom')
  *         format: url
  *       type:
  *         type: string
- *         enum: ['Publication']
  *       summaryMap:
  *         type: object
  *         properties:
@@ -55,16 +54,69 @@ const boom = require('@hapi/boom')
  *         type: array
  *         items:
  *           $ref: '#/definitions/annotation'
+ *       creator:
+ *         type: array
+ *         items:
+ *           $ref: '#/definitions/annotation'
+ *       contributor:
+ *         type: array
+ *         items:
+ *           $ref: '#/definitions/annotation'
+ *       illustrator:
+ *         type: array
+ *         items:
+ *           $ref: '#/definitions/annotation'
+ *       publisher:
+ *         type: array
+ *         items:
+ *           $ref: '#/definitions/annotation'
+ *       translator:
+ *         type: array
+ *         items:
+ *           $ref: '#/definitions/annotation'
+ *       copyrightHolder:
+ *         type: array
+ *         items:
+ *           $ref: '#/definitions/annotation'
  *       replies:
  *         type: array
  *         items:
  *           type: string
  *           format: url
- *       description:
+ *       abstract:
  *         type: string
  *       datePublished:
  *         type: string
  *         format: timestamp
+ *       numberOfPages:
+ *         type: number
+ *       encodingFormat:
+ *         type: string
+ *       url:
+ *         type: string
+ *       dateModified:
+ *         type: string
+ *         format: timestamp
+ *       bookEdition:
+ *         type: string
+ *       isbn:
+ *         type: string
+ *       copyrightYear:
+ *         type: number
+ *       genre:
+ *         type: string
+ *       license:
+ *         type: string
+ *       wordCount:
+ *         type: number
+ *       description:
+ *         type: string
+ *       status:
+ *         type: string
+ *         enum: ['test']
+ *       inDirection:
+ *         type: string
+ *         enum: ['ltr', 'rtl']
  *       readingOrder:
  *         type: array
  *         items:

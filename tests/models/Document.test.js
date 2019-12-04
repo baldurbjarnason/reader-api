@@ -7,10 +7,6 @@ const { urlToId } = require('../../utils/utils')
 const crypto = require('crypto')
 
 const test = async app => {
-  if (!process.env.POSTGRE_INSTANCE) {
-    await app.initialize()
-  }
-
   const reader = {
     name: 'J. Random Reader'
   }
@@ -24,19 +20,13 @@ const test = async app => {
     name: 'Publication A',
     readingOrder: [
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Link',
-        href: 'http://example.org/abc',
-        hreflang: 'en',
-        mediaType: 'text/html',
+        url: 'http://example.org/abc',
         name: 'An example link'
       },
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Link',
-        href: 'http://example.org/abc2',
-        hreflang: 'en',
-        mediaType: 'text/html',
+        url: 'http://example.org/abc2',
         name: 'An example link2'
       }
     ]
@@ -125,9 +115,6 @@ const test = async app => {
     }
   )
 
-  if (!process.env.POSTGRE_INSTANCE) {
-    await app.terminate()
-  }
   await destroyDB(app)
 }
 

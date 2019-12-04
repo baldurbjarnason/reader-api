@@ -19,6 +19,7 @@ const outboxGetTests = require('./outbox-get.test')
 const publicationGetTests = require('./publication-get.test')
 const publicationUpdateTests = require('./publication-update.test')
 const publicationDeleteTests = require('./publication-delete.test')
+const publicationPostTests = require('./publication-post.test')
 
 const readerCreateTests = require('./reader-create.test')
 const readerGetTests = require('./reader-get.test')
@@ -41,12 +42,10 @@ const app = require('../../server').app
 require('dotenv').config()
 
 const allTests = async () => {
-  if (process.env.POSTGRE_INSTANCE) {
-    await app.initialize(true)
-    await app.knex.migrate.rollback()
-    if (process.env.POSTGRE_DB === 'travis_ci_test') {
-      await app.knex.migrate.latest()
-    }
+  await app.initialize(true)
+  await app.knex.migrate.rollback()
+  if (process.env.POSTGRE_DB === 'travis_ci_test') {
+    await app.knex.migrate.latest()
   }
 
   const test = process.env.npm_config_test
@@ -71,6 +70,7 @@ const allTests = async () => {
     await publicationGetTests(app)
     await publicationUpdateTests(app)
     await publicationDeleteTests(app)
+    await publicationPostTests(app)
   }
 
   if (!test || test === 'reader') {
@@ -104,10 +104,7 @@ const allTests = async () => {
     await jobGetTests(app)
   }
 
-  if (process.env.POSTGRE_INSTANCE) {
-    await app.knex.migrate.rollback()
-    await app.terminate()
-  }
+  await app.knex.migrate.rollback()
+  await app.terminate()
 }
-
 allTests()

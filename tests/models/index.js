@@ -12,16 +12,20 @@ const app = require('../../server').app
 
 require('dotenv').config()
 
-// note: after new migration, remove 'true' from app.initialize and comment out rollback. Once.
+// reset database:
+// sudo -u postgres psql -c "drop database ink_test;"
+// sudo -u postgres psql -c "create database ink_test;"
+// knex migrate:latest --env=postgresql
+
+// note: after new migration, remove 'true' from app.initialize and comment out rollback. Run models test once.
 
 const allTests = async () => {
-  if (process.env.POSTGRE_INSTANCE) {
-    await app.initialize(true)
-    await app.knex.migrate.rollback()
-    if (process.env.POSTGRE_DB === 'travis_ci_test') {
-      await app.knex.migrate.latest()
-    }
+  await app.initialize(true)
+  await app.knex.migrate.rollback()
+  if (process.env.POSTGRE_DB === 'travis_ci_test') {
+    await app.knex.migrate.latest()
   }
+
   await activityTests(app)
   await documentTests(app)
   await publicationTests(app)
@@ -32,10 +36,8 @@ const allTests = async () => {
   await readActivityTests(app)
   await jobTests(app)
 
-  if (process.env.POSTGRE_INSTANCE) {
-    await app.knex.migrate.rollback()
-    await app.terminate()
-  }
+  await app.knex.migrate.rollback()
+  await app.terminate()
 }
 
 allTests()

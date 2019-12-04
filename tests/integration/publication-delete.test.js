@@ -5,7 +5,6 @@ const {
   getToken,
   createUser,
   destroyDB,
-  getActivityFromUrl,
   createPublication,
   createDocument
 } = require('../utils/utils')
@@ -16,10 +15,6 @@ const { Tag } = require('../../models/Tag')
 const { Publication_Tag } = require('../../models/Publications_Tags')
 
 const test = async app => {
-  if (!process.env.POSTGRE_INSTANCE) {
-    await app.initialize()
-  }
-
   const token = getToken()
   const readerCompleteUrl = await createUser(app, token)
   const readerUrl = urlparse(readerCompleteUrl).path
@@ -34,51 +29,41 @@ const test = async app => {
   const now = new Date().toISOString()
 
   const publicationObject = {
-    type: 'Publication',
+    type: 'Book',
     name: 'Publication A',
     author: ['John Smith'],
     editor: 'Jané S. Doe',
-    description: 'this is a description!!',
-    inLanguage: 'English',
+    abstract: 'this is a description!!',
+    inLanguage: 'en',
     datePublished: now,
     links: [
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        href: 'http://example.org/abc',
-        hreflang: 'en',
-        mediaType: 'text/html',
+        url: 'http://example.org/abc',
+        encodingFormat: 'text/html',
         name: 'An example link'
       }
     ],
     readingOrder: [
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        href: 'http://example.org/abc',
-        hreflang: 'en',
-        mediaType: 'text/html',
+        url: 'http://example.org/abc',
+        encodingFormat: 'text/html',
         name: 'An example reading order object1'
       },
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        href: 'http://example.org/abc',
-        hreflang: 'en',
-        mediaType: 'text/html',
+        url: 'http://example.org/abc',
+        encodingFormat: 'text/html',
         name: 'An example reading order object2'
       },
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        href: 'http://example.org/abc',
-        hreflang: 'en',
-        mediaType: 'text/html',
+        url: 'http://example.org/abc',
+        encodingFormat: 'text/html',
         name: 'An example reading order object3'
       }
     ],
     resources: [
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        href: 'http://example.org/abc',
-        hreflang: 'en',
-        mediaType: 'text/html',
+        url: 'http://example.org/abc',
+        encodingFormat: 'text/html',
         name: 'An example resource'
       }
     ],
@@ -210,6 +195,7 @@ const test = async app => {
             }
           })
         )
+
       await tap.equal(res.statusCode, 404)
       const error = JSON.parse(res.text)
       await tap.equal(error.statusCode, 404)
@@ -253,9 +239,6 @@ const test = async app => {
     }
   )
 
-  if (!process.env.POSTGRE_INSTANCE) {
-    await app.terminate()
-  }
   await destroyDB(app)
 }
 

@@ -12,10 +12,6 @@ const crypto = require('crypto')
 const _ = require('lodash')
 
 const test = async app => {
-  if (!process.env.POSTGRE_INSTANCE) {
-    await app.initialize()
-  }
-
   const reader = {
     name: 'J. Random Reader'
   }
@@ -25,68 +21,83 @@ const test = async app => {
 
   const createPublicationObj = {
     name: 'Publication A',
-    description: 'description of publication A',
+    abstract: 'description of publication A',
+    type: 'Book',
     author: [
       { type: 'Person', name: 'Sample Author' },
       { type: 'Organization', name: 'Org inc.' }
     ],
     editor: ['Sample editor'],
-    inLanguage: ['English'],
+    contributor: ['Sample Contributor'],
+    creator: ['Sample Creator'],
+    illustrator: ['Sample Illustrator'],
+    publisher: ['Sample Publisher'],
+    translator: ['Sample Translator'],
+    inLanguage: ['en'],
     keywords: ['key', 'words'],
+    numberOfPages: 666,
+    encodingFormat: 'epub',
+    datePublished: new Date(2011, 3, 20).toISOString(),
+    url: 'http://www.something.com',
+    dateModified: new Date(2012, 4, 25).toISOString(),
+    bookEdition: 'second edition',
+    bookFormat: 'EBook',
+    isbn: '1234',
+    copyrightYear: 1923,
+    genre: 'romance',
+    license: 'http://www.mylicense.com',
+    status: 'test',
+    wordCount: 123,
+    description: 'description goes here',
+    inDirection: 'ltr',
+    copyrightHolder: 'Person A',
     json: {
       property1: 'value1'
     },
     readingOrder: [
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Link',
-        href: 'http://example.org/abc',
-        hreflang: 'en',
-        mediaType: 'text/html',
+        url: 'http://example.org/abc',
+        encodingFormat: 'text/html',
         name: 'An example link'
       },
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Link',
-        href: 'http://example.org/abc2',
+        url: 'http://example.org/abc2',
         hreflang: 'en',
-        mediaType: 'text/html',
+        encodingFormat: 'text/html',
         name: 'An example link2'
       }
     ],
     links: [
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Link',
-        href: 'http://example.org/abc3',
+        url: 'http://example.org/abc3',
         hreflang: 'en',
-        mediaType: 'text/html',
+        encodingFormat: 'text/html',
         name: 'An example link3'
       },
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Link',
-        href: 'http://example.org/abc4',
+        url: 'http://example.org/abc4',
         hreflang: 'en',
-        mediaType: 'text/html',
+        encodingFormat: 'text/html',
         name: 'An example link4'
       }
     ],
     resources: [
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Link',
-        href: 'http://example.org/abc5',
+        url: 'http://example.org/abc5',
         hreflang: 'en',
-        mediaType: 'text/html',
+        encodingFormat: 'text/html',
         name: 'An example link5'
       },
       {
-        '@context': 'https://www.w3.org/ns/activitystreams',
         type: 'Link',
-        href: 'http://example.org/abc6',
+        url: 'http://example.org/abc6',
         hreflang: 'en',
-        mediaType: 'text/html',
+        encodingFormat: 'text/html',
         name: 'An example link6'
       }
     ]
@@ -94,24 +105,7 @@ const test = async app => {
 
   const simplePublication = {
     name: 'Publication A',
-    readingOrder: [
-      {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        type: 'Link',
-        href: 'http://example.org/abc',
-        hreflang: 'en',
-        mediaType: 'text/html',
-        name: 'An example link'
-      },
-      {
-        '@context': 'https://www.w3.org/ns/activitystreams',
-        type: 'Link',
-        href: 'http://example.org/abc2',
-        hreflang: 'en',
-        mediaType: 'text/html',
-        name: 'An example link2'
-      }
-    ]
+    type: 'Book'
   }
 
   const createdTag = await Tag.createTag(urlToId(createdReader.id), {
@@ -159,6 +153,45 @@ const test = async app => {
     await tap.type(publication.reader, 'object')
     await tap.ok(publication.reader instanceof Reader)
   })
+
+  await tap.test(
+    'Get publication by id should return all metadata',
+    async () => {
+      publication = await Publication.byId(urlToId(publicationId2))
+      await tap.type(publication, 'object')
+      await tap.ok(publication instanceof Publication)
+      await tap.equal(publication.readerId, createdReader.id)
+      await tap.equal(publication.type, 'Book')
+      await tap.equal(publication.abstract, 'description of publication A')
+      await tap.ok(publication.datePublished)
+      await tap.equal(publication.name, 'Publication A')
+      await tap.equal(publication.numberOfPages, 666)
+      await tap.equal(publication.encodingFormat, 'epub')
+      await tap.equal(publication.json.property1, 'value1')
+      await tap.equal(publication.readingOrder.length, 2)
+      await tap.equal(publication.links.length, 2)
+      await tap.equal(publication.resources.length, 2)
+      await tap.equal(publication.wordCount, 123)
+      await tap.equal(publication.status, 99) // not converted back to a string yet
+      await tap.equal(publication.description, 'description goes here')
+
+      // attributions
+      const attributions = publication.attributions
+      await tap.ok(attributions)
+      await tap.equal(attributions.length, 9)
+      // metadata
+      const metadata = publication.metadata
+      await tap.equal(metadata.url, 'http://www.something.com')
+      await tap.ok(metadata.dateModified)
+      await tap.equal(metadata.bookEdition, 'second edition')
+      await tap.equal(metadata.bookFormat, 'EBook')
+      await tap.equal(metadata.isbn, '1234')
+      await tap.equal(metadata.copyrightYear, 1923)
+      await tap.equal(metadata.genre, 'romance')
+      await tap.equal(metadata.license, 'http://www.mylicense.com')
+      await tap.equal(metadata.inDirection, 'ltr')
+    }
+  )
 
   await tap.test('Publication addTag', async () => {
     const res = await Publication_Tag.addTagToPub(
@@ -231,6 +264,7 @@ const test = async app => {
 
     // Update the publication
     const newPub = await Publication.update(newPubObj)
+    await tap.notOk(newPub instanceof Error)
 
     // Retrieve the Publication that has just been updated
     const pubRetrieved = await Publication.byId(urlToId(newPub.id))
@@ -238,10 +272,6 @@ const test = async app => {
     await tap.ok(newPub)
     await tap.ok(newPub instanceof Publication)
     await tap.equal(newPub.name, pubRetrieved.name)
-    await tap.equal(
-      newPub.readingOrder.data[0].name,
-      pubRetrieved.readingOrder[0].name
-    )
   })
 
   await tap.test(
@@ -259,40 +289,42 @@ const test = async app => {
     }
   )
 
-  // await tap.test('Update publication datePublished', async () => {
-  //   const timestamp = new Date(2018, 01, 30).toISOString()
-  //   const newPubObj = {
-  //     id: publication.id,
-  //     datePublished: timestamp
-  //   }
-
-  //   const newPub = await Publication.update(newPubObj)
-
-  //   // Retrieve the Publication that has just been updated
-  //   const pubRetrieved = await Publication.byId(urlToId(newPub.id))
-
-  //   await tap.ok(newPub)
-  //   await tap.ok(newPub instanceof Publication)
-  //   await tap.equal(
-  //     newPub.datePublished.toString(),
-  //     pubRetrieved.datePublished.toString()
-  //   )
-  // })
-
-  await tap.test('Update publication description', async () => {
+  await tap.test('Update publication datePublished', async () => {
+    const timestamp = new Date(2018, 1, 30).toISOString()
     const newPubObj = {
       id: publication.id,
-      description: 'New description for Publication'
+      datePublished: timestamp
     }
 
     const newPub = await Publication.update(newPubObj)
+    await tap.notOk(newPub instanceof Error)
 
     // Retrieve the Publication that has just been updated
     const pubRetrieved = await Publication.byId(urlToId(newPub.id))
 
     await tap.ok(newPub)
     await tap.ok(newPub instanceof Publication)
-    await tap.equal(newPub.description, pubRetrieved.description)
+    await tap.equal(
+      newPub.datePublished.toString(),
+      pubRetrieved.datePublished.toString()
+    )
+  })
+
+  await tap.test('Update publication abstract', async () => {
+    const newPubObj = {
+      id: publication.id,
+      abstract: 'New description for Publication'
+    }
+
+    const newPub = await Publication.update(newPubObj)
+    await tap.notOk(newPub instanceof Error)
+
+    // Retrieve the Publication that has just been updated
+    const pubRetrieved = await Publication.byId(urlToId(newPub.id))
+
+    await tap.ok(newPub)
+    await tap.ok(newPub instanceof Publication)
+    await tap.equal(newPub.abstract, pubRetrieved.abstract)
   })
 
   await tap.test('Update publication json object', async () => {
@@ -302,6 +334,7 @@ const test = async app => {
     }
 
     const newPub = await Publication.update(newPubObj)
+    await tap.notOk(newPub instanceof Error)
 
     // Retrieve the Publication that has just been updated
     const pubRetrieved = await Publication.byId(urlToId(newPub.id))
@@ -311,14 +344,65 @@ const test = async app => {
     await tap.equal(newPub.json.property, pubRetrieved.json.property)
   })
 
+  await tap.test('Update publication numberOfPages', async () => {
+    const newPubObj = {
+      id: publication.id,
+      numberOfPages: 555
+    }
+
+    const newPub = await Publication.update(newPubObj)
+    await tap.notOk(newPub instanceof Error)
+
+    // Retrieve the Publication that has just been updated
+    const pubRetrieved = await Publication.byId(urlToId(newPub.id))
+
+    await tap.ok(newPub)
+    await tap.ok(newPub instanceof Publication)
+    await tap.equal(pubRetrieved.numberOfPages, 555)
+  })
+
+  await tap.test('Update publication encodingFormat', async () => {
+    const newPubObj = {
+      id: publication.id,
+      encodingFormat: 'pdf'
+    }
+
+    const newPub = await Publication.update(newPubObj)
+    await tap.notOk(newPub instanceof Error)
+
+    // Retrieve the Publication that has just been updated
+    const pubRetrieved = await Publication.byId(urlToId(newPub.id))
+
+    await tap.ok(newPub)
+    await tap.ok(newPub instanceof Publication)
+    await tap.equal(pubRetrieved.encodingFormat, 'pdf')
+  })
+
+  await tap.test('Update publication type', async () => {
+    const newPubObj = {
+      id: publication.id,
+      type: 'Article'
+    }
+
+    const newPub = await Publication.update(newPubObj)
+    await tap.notOk(newPub instanceof Error)
+    // Retrieve the Publication that has just been updated
+    const pubRetrieved = await Publication.byId(urlToId(newPub.id))
+
+    await tap.ok(newPub)
+    await tap.ok(newPub instanceof Publication)
+    await tap.equal(pubRetrieved.type, 'Article')
+  })
+
   await tap.test('Update publication metadata', async () => {
     const newPubObj = {
       id: publication.id,
-      inLanguage: ['Swahili', 'French'],
+      inLanguage: ['en', 'fr'],
       keywords: ['newKeyWord1', 'newKeyWord2']
     }
 
     const newPub = await Publication.update(newPubObj)
+    await tap.notOk(newPub instanceof Error)
 
     // Retrieve the Publication that has just been updated
     const pubRetrieved = await Publication.byId(urlToId(newPub.id))
@@ -354,6 +438,8 @@ const test = async app => {
     }
 
     const newPub = await Publication.update(newPubObj)
+    await tap.notOk(newPub instanceof Error)
+
     const attributions = await Attribution.getAttributionByPubId(
       urlToId(publication.id)
     )
@@ -400,7 +486,7 @@ const test = async app => {
     )
     await tap.equal(newPub.editor[0].name, 'New Sample Editor')
     await tap.ok(attributions[0] instanceof Attribution)
-    await tap.equal(attributions.length, 3)
+    await tap.equal(attributions.length, 9)
     await tap.ok(newAuthor1Exists)
     await tap.ok(newAuthor2Exists)
     await tap.ok(newEditorExists)
@@ -410,10 +496,17 @@ const test = async app => {
     const newPubObj = {
       id: publication.id,
       author: ['Sample String Author1', 'Sample String Author2'],
-      editor: ['Sample String Editor1', 'Sample String Editor2']
+      editor: ['Sample String Editor1', 'Sample String Editor2'],
+      contributor: ['New Sample Contributor'],
+      creator: ['New Sample Creator'],
+      illustrator: ['New Sample Illustrator'],
+      publisher: ['New Sample Publisher'],
+      translator: ['New Sample Translator']
     }
 
     const newPub = await Publication.update(newPubObj)
+    await tap.notOk(newPub instanceof Error)
+
     const attributions = await Attribution.getAttributionByPubId(
       urlToId(publication.id)
     )
@@ -422,6 +515,11 @@ const test = async app => {
     let author2Exists = false
     let editor1Exists = false
     let editor2Exists = false
+    let contributorExists = false
+    let creatorExists = false
+    let illustratorExists = false
+    let publisherExists = false
+    let translatorExists = false
 
     for (let i = 0; i < attributions.length; i++) {
       if (
@@ -451,16 +549,51 @@ const test = async app => {
       ) {
         editor2Exists = true
       }
+      if (
+        attributions[i].role === 'contributor' &&
+        attributions[i].name === 'New Sample Contributor'
+      ) {
+        contributorExists = true
+      }
+      if (
+        attributions[i].role === 'creator' &&
+        attributions[i].name === 'New Sample Creator'
+      ) {
+        creatorExists = true
+      }
+      if (
+        attributions[i].role === 'illustrator' &&
+        attributions[i].name === 'New Sample Illustrator'
+      ) {
+        illustratorExists = true
+      }
+      if (
+        attributions[i].role === 'publisher' &&
+        attributions[i].name === 'New Sample Publisher'
+      ) {
+        publisherExists = true
+      }
+      if (
+        attributions[i].role === 'translator' &&
+        attributions[i].name === 'New Sample Translator'
+      ) {
+        translatorExists = true
+      }
     }
 
     await tap.ok(newPub)
     await tap.ok(newPub instanceof Publication)
     await tap.ok(attributions[0] instanceof Attribution)
-    await tap.equal(attributions.length, 4)
+    await tap.equal(attributions.length, 10)
     await tap.ok(author1Exists)
     await tap.ok(author2Exists)
     await tap.ok(editor1Exists)
     await tap.ok(editor2Exists)
+    await tap.ok(contributorExists)
+    await tap.ok(creatorExists)
+    await tap.ok(illustratorExists)
+    await tap.ok(publisherExists)
+    await tap.ok(translatorExists)
   })
 
   await tap.test(
@@ -626,10 +759,6 @@ const test = async app => {
     await tap.notEqual(pubIdsResponse.indexOf(urlToId(publicationId2)), -1)
     await tap.notEqual(pubIdsResponse.indexOf(urlToId(publicationId3)), -1)
   })
-
-  if (!process.env.POSTGRE_INSTANCE) {
-    await app.terminate()
-  }
 
   await destroyDB(app)
 }

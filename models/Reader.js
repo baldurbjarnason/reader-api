@@ -80,6 +80,12 @@ class Reader extends BaseModel {
         `%${filter.title.toLowerCase()}%`
       )
     }
+    if (filter.language) {
+      resultQuery = resultQuery.whereJsonSupersetOf(
+        'Publication.metadata:inLanguage',
+        [filter.language]
+      )
+    }
     if (filter.author) {
       resultQuery = resultQuery
         .leftJoin(
@@ -142,10 +148,13 @@ class Reader extends BaseModel {
         builder
           .select(
             'Publication.id',
-            'Publication.description',
+            'Publication.abstract',
             'Publication.metadata',
             'Publication.name',
             'Publication.datePublished',
+            'Publication.type',
+            'Publication.numberOfPages',
+            'Publication.encodingFormat',
             'Publication.json',
             'Publication.readerId',
             'Publication.published',
@@ -159,6 +168,11 @@ class Reader extends BaseModel {
         if (filter.title) {
           const title = filter.title.toLowerCase()
           builder.where('Publication.name', 'ilike', `%${title}%`)
+        }
+        if (filter.language) {
+          builder.whereJsonSupersetOf('Publication.metadata:inLanguage', [
+            filter.language
+          ])
         }
         builder.leftJoin(
           'Attribution',
@@ -301,9 +315,10 @@ class Reader extends BaseModel {
           pubBuilder.select(
             'id',
             'name',
-            'description',
+            'abstract',
             'datePublished',
-            'metadata'
+            'metadata',
+            'type'
           )
         })
         builder.whereNull('Note.deleted')

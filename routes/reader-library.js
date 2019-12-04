@@ -7,6 +7,8 @@ const utils = require('../utils/utils')
 const paginate = require('./middleware/paginate')
 const boom = require('@hapi/boom')
 
+const { libraryCacheGet } = require('../utils/cache')
+
 /**
  * @swagger
  * definition:
@@ -17,7 +19,6 @@ const boom = require('@hapi/boom')
  *         format: url
  *       type:
  *         type: string
- *         enum: ['Publication']
  *       summaryMap:
  *         type: object
  *         properties:
@@ -33,6 +34,26 @@ const boom = require('@hapi/boom')
  *         type: array
  *         items:
  *           $ref: '#/definitions/annotation'
+ *       creator:
+ *         type: array
+ *         items:
+ *           $ref: '#/definitions/annotation'
+ *       contributor:
+ *         type: array
+ *         items:
+ *           $ref: '#/definitions/annotation'
+ *       illustrator:
+ *         type: array
+ *         items:
+ *           $ref: '#/definitions/annotation'
+ *       publisher:
+ *         type: array
+ *         items:
+ *           $ref: '#/definitions/annotation'
+ *       translator:
+ *         type: array
+ *         items:
+ *           $ref: '#/definitions/annotation'
  *       replies:
  *         type: array
  *         items:
@@ -40,11 +61,40 @@ const boom = require('@hapi/boom')
  *           format: url
  *       json:
  *         type: object
+ *       numberOfPages:
+ *         type: number
+ *       encodingFormat:
+ *         type: string
+ *       url:
+ *         type: string
+ *       dateModified:
+ *         type: string
+ *         format: timestamp
+ *       bookEdition:
+ *         type: string
+ *       isbn:
+ *         type: string
+ *       copyrightYear:
+ *         type: number
+ *       genre:
+ *         type: string
+ *       license:
+ *         type: string
+ *       wordCount:
+ *         type: number
+ *       description:
+ *         type: string
+ *       status:
+ *         type: string
+ *         enum: ['test']
+ *       inDirection:
+ *         type: string
+ *         enum: ['ltr', 'rtl']
  *       resources:
  *         type: array
  *         items:
  *           $ref: '#/definitions/link'
- *       description:
+ *       abstract:
  *         type: string
  *       datePublished:
  *         type: string
@@ -140,13 +190,17 @@ module.exports = app => {
    *         name: role
    *         schema:
    *           type: string
-   *           enum: ['author', 'editor']
+   *           enum: ['author', 'editor', 'contributor', 'creator', 'illustrator', 'publisher', 'translator']
    *         description: a modifier for attribution to specify the type of attribution
    *       - in: query
    *         name: author
    *         schema:
    *           type: string
    *         description: will return only exact matches.
+   *       - in: query
+   *         name: language
+   *         schema:
+   *           type: string
    *       - in: query
    *         name: orderBy
    *         schema:
@@ -188,11 +242,23 @@ module.exports = app => {
         title: req.query.title,
         orderBy: req.query.orderBy,
         reverse: req.query.reverse,
-        collection: req.query.stack
+        collection: req.query.stack,
+        language: req.query.language
       }
       let returnedReader
       if (req.query.limit < 10) req.query.limit = 10 // prevents people from cheating by setting limit=0 to get everything
-      Reader.getLibrary(id, req.query.limit, req.skip, filters)
+
+      libraryCacheGet(id, !!req.headers['if-modified-since'])
+        .then(value => {
+          if (
+            value &&
+            req.headers['if-modified-since'] &&
+            req.headers['if-modified-since'] > value
+          ) {
+            res.status(304)
+          }
+          return Reader.getLibrary(id, req.query.limit, req.skip, filters)
+        })
         .then(reader => {
           if (!reader) {
             return next(
